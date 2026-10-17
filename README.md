@@ -2,7 +2,7 @@
 
 An interactive 3D word search puzzle where words wrap seamlessly across cube edges, grids rotate in real-time, and finding words clears the die.
 
-The entire game is self-contained in a single file: **`standalone.html`**. There are no build steps, no package managers, and no runtime dependencies.
+The entire game is self-contained in a single file: **`cubix.html`**. There are no build steps, no package managers, and no runtime dependencies.
 
 ---
 
@@ -44,7 +44,7 @@ Unlike traditional flat word searches, words in Cubix wrap across adjacent faces
 ## How to Play
 
 ### Running the Game
-Since **`standalone.html`** is completely self-contained, no web server or installation is needed:
+Since **`cubix.html`** is completely self-contained, no web server or installation is needed:
 - **Double-click `standalone.html`** in your file manager, or
 - **Drag and drop `standalone.html`** into any web browser (Chrome, Firefox, Safari, Edge), or
 - Open via command line:
