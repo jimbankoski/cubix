@@ -164,6 +164,12 @@
       border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.6);
       box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+      cursor: default;
+    }
+    .letter-tile:hover {
+      transform: scale(1.18);
+      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.6);
     }
     .btn-submit {
       background: linear-gradient(135deg, #10b981, #059669);
@@ -246,19 +252,131 @@
       background: #f59e0b;
       color: #020617;
     }
+    /* HTML-in-Canvas Subtree Styles (layoutsubtree / content="drawable") */
+    #canvas-dom-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+      z-index: -9999;
+      opacity: 0.001; /* Active in DOM tree so layout engine processes layoutsubtree */
+    }
+    .face-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 1024px;
+      height: 1024px;
+      display: block;
+    }
+    .face-dom-grid {
+      width: 1024px;
+      height: 1024px;
+      display: grid;
+      box-sizing: border-box;
+      background: #0b0f19;
+      border: 8px solid #1e293b;
+      padding: 12px;
+    }
+    .dom-tile {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 14px;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-weight: 800;
+      user-select: none;
+      box-sizing: border-box;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+    }
+    .dom-tile .tile-letter {
+      display: inline-block;
+      line-height: 1;
+      transform-origin: center center;
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s ease, text-shadow 0.15s ease;
+      will-change: transform;
+    }
+    /* CSS on hover pseudo-class and .hovered state: makes the character grow in size a bit */
+    .dom-tile:hover .tile-letter,
+    .dom-tile.hovered .tile-letter {
+      transform: scale(1.3);
+      color: #fbbf24;
+      text-shadow: 0 0 16px rgba(251, 191, 36, 0.7);
+    }
+    .dom-tile:hover,
+    .dom-tile.hovered {
+      background: #273549;
+      border-color: #f59e0b;
+      transform: scale(1.04);
+      z-index: 10;
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.5);
+    }
+    .dom-tile.selected {
+      background: #f59e0b;
+      border: 4px solid #ffffff;
+      color: #0f172a;
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.6);
+      transform: scale(0.96);
+    }
+    .dom-tile.selected .tile-letter {
+      color: #0f172a;
+      text-shadow: none;
+      transform: scale(1.08);
+    }
+    .dom-tile.selected:hover .tile-letter,
+    .dom-tile.selected.hovered .tile-letter {
+      transform: scale(1.24);
+      color: #020617;
+    }
+    .dom-tile.blank {
+      background: #090d16;
+      border: 2px solid #1e293b;
+      color: transparent;
+      pointer-events: none;
+    }
+    .api-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+    .api-badge.fallback {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+    }
   </style>
   <!-- Pure browser JavaScript imports without Node -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+  <!-- HTML-in-Canvas Subtree Layer (layoutsubtree / content="drawable") -->
+  <div id="canvas-dom-layer"></div>
+
   <!-- Top HUD -->
   <div class="top-bar">
     <div class="hud-card">
       <div class="logo-badge">3D</div>
       <div class="title-group">
         <h1>CUBIX WORD SEARCH</h1>
-        <p>Pure Browser JavaScript Edition</p>
+        <p>HTML-in-Canvas WICG Edition</p>
+        <div class="api-badge" id="api-badge">HTML-in-Canvas: Initializing...</div>
       </div>
     </div>
     <div class="hud-card">
@@ -301,6 +419,7 @@
     </div>
     <div style="display: flex; gap: 4px; align-items: center;">
       <span style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-right: 4px;">VIEW:</span>
+      <button class="btn-pill" id="btn-view-3d">3D</button>
       <button class="btn-pill" data-face="0">Front</button>
       <button class="btn-pill" data-face="4">Right</button>
       <button class="btn-pill" data-face="1">Back</button>
@@ -690,8 +809,28 @@
     );
     cubeGroup.add(coreMesh);
 
-    // 6 Canvases & Plane Meshes
+    // HTML-in-Canvas Feature Detection
+    const hasHtmlInCanvas = typeof CanvasRenderingContext2D !== 'undefined' &&
+      typeof CanvasRenderingContext2D.prototype.drawElementImage === 'function';
+
+    const apiBadge = document.getElementById('api-badge');
+    if (apiBadge) {
+      if (hasHtmlInCanvas) {
+        apiBadge.textContent = 'HTML-in-Canvas: Native Active';
+        apiBadge.classList.remove('fallback');
+        apiBadge.title = 'WICG HTML-in-Canvas active: layoutsubtree + onpaint + drawElementImage';
+      } else {
+        apiBadge.textContent = 'HTML-in-Canvas: Ready (Compat Mode)';
+        apiBadge.classList.add('fallback');
+        apiBadge.title = 'HTML DOM subtree constructed with layoutsubtree & onpaint listeners. For native drawElementImage, enable chrome://flags/#enable-experimental-web-platform-features';
+      }
+    }
+
+    // 6 Canvases with layoutsubtree attribute (Core Primitive 1)
+    const domLayer = document.getElementById('canvas-dom-layer');
     const faceCanvases = [];
+    const faceDomGrids = [];
+    const domTiles = {};
     const faceTextures = [];
     const faceMeshes = [];
     const planeGeo = new THREE.PlaneGeometry(2, 2);
@@ -707,16 +846,54 @@
 
     for (let f = 0; f < 6; f++) {
       const cvs = document.createElement('canvas');
+      cvs.className = 'face-canvas';
+      cvs.id = `face-canvas-${f}`;
       cvs.width = 1024;
       cvs.height = 1024;
+      // Core Primitive 1: layoutsubtree attribute (and content="drawable")
+      cvs.setAttribute('layoutsubtree', '');
+      cvs.setAttribute('content', 'drawable');
+
+      // Direct HTML child container representing the live HTML face layout (requires 'drawable' attribute for drawElementImage)
+      const domFaceGrid = document.createElement('div');
+      domFaceGrid.className = 'face-dom-grid';
+      domFaceGrid.id = `face-dom-grid-${f}`;
+      domFaceGrid.setAttribute('drawable', '');
+      cvs.appendChild(domFaceGrid);
+      faceDomGrids.push(domFaceGrid);
+
+      // Attach to DOM so layout engine processes CSS styles and layout
+      if (domLayer) domLayer.appendChild(cvs);
+
       faceCanvases.push(cvs);
 
       const tex = new THREE.CanvasTexture(cvs);
       faceTextures.push(tex);
 
+      // Core Primitive 2: onpaint / paint event listener
+      const onPaintHandler = () => {
+        const ctx = cvs.getContext('2d');
+        renderCanvasFallback(f, ctx, new Set(selectedPath), hoveredTileId);
+        if (typeof ctx.drawElementImage === 'function') {
+          try {
+            ctx.drawElementImage(domFaceGrid, 0, 0);
+          } catch (e) {
+            // Snapshot race
+          }
+        }
+        tex.needsUpdate = true;
+      };
+      cvs.addEventListener('paint', onPaintHandler);
+      cvs.onpaint = onPaintHandler;
+
       const mesh = new THREE.Mesh(
         planeGeo,
-        new THREE.MeshStandardMaterial({ map: tex, roughness: 0.2, metalness: 0.1 })
+        new THREE.MeshStandardMaterial({
+          map: tex,
+          roughness: 0.2,
+          metalness: 0.1,
+          side: THREE.DoubleSide
+        })
       );
       mesh.position.set(...faceConfigs[f].pos);
       mesh.rotation.set(...faceConfigs[f].rot);
@@ -725,62 +902,185 @@
       faceMeshes.push(mesh);
     }
 
-    // Render Textures
-    function updateTextures() {
-      const pathSet = new Set(selectedPath);
+    // Build the real HTML DOM tile tree inside the canvas layoutsubtree
+    function setupDomSubtree() {
       for (let f = 0; f < 6; f++) {
-        const ctx = faceCanvases[f].getContext('2d');
-        const W = 1024, H = 1024;
-        const step = W / gridSize;
-        const gap = Math.max(6, 16 - gridSize * 2);
-
-        ctx.fillStyle = '#0b0f19';
-        ctx.fillRect(0, 0, W, H);
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 8;
-        ctx.strokeRect(4, 4, W - 8, H - 8);
+        const grid = faceDomGrids[f];
+        grid.innerHTML = '';
+        grid.setAttribute('drawable', '');
+        grid.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+        grid.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
+        grid.style.gap = `${Math.max(6, 16 - gridSize * 2)}px`;
 
         for (let r = 0; r < gridSize; r++) {
           for (let c = 0; c < gridSize; c++) {
             const id = `${f}-${r}-${c}`;
+            const t = tiles[id];
+            const tileEl = document.createElement('div');
+            tileEl.className = 'dom-tile';
+            tileEl.id = `dom-tile-${id}`;
+            tileEl.setAttribute('data-tile-id', id);
+            tileEl.setAttribute('role', 'button');
+            tileEl.setAttribute('aria-label', `Letter ${t ? t.letter : ''}`);
+            tileEl.style.fontSize = `${Math.round((1024 / gridSize) * 0.44)}px`;
+
+            const letterSpan = document.createElement('span');
+            letterSpan.className = 'tile-letter';
+            letterSpan.textContent = t ? t.letter : '';
+            tileEl.appendChild(letterSpan);
+
+            grid.appendChild(tileEl);
+            domTiles[id] = tileEl;
+          }
+        }
+      }
+    }
+
+    // Hover state tracking across 3D raycast and HTML DOM
+    let hoveredTileId = null;
+
+    function updateHoveredTile(newId) {
+      if (hoveredTileId === newId) return;
+      const prevId = hoveredTileId;
+      hoveredTileId = newId;
+
+      if (prevId && domTiles[prevId]) {
+        domTiles[prevId].classList.remove('hovered');
+        domTiles[prevId].dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+        domTiles[prevId].dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
+      }
+
+      if (hoveredTileId && domTiles[hoveredTileId]) {
+        domTiles[hoveredTileId].classList.add('hovered');
+        domTiles[hoveredTileId].dispatchEvent(new MouseEvent('mouseenter', { bubbles: false }));
+        domTiles[hoveredTileId].dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      }
+
+      if (renderer && renderer.domElement) {
+        renderer.domElement.style.cursor = (hoveredTileId && tiles[hoveredTileId] && !tiles[hoveredTileId].isBlank)
+          ? 'pointer'
+          : 'default';
+      }
+
+      updateTextures();
+    }
+
+    // Fallback renderer when browser does not have experimental drawElementImage enabled
+    function renderCanvasFallback(f, ctx, pathSet, activeHoveredId) {
+      const W = 1024, H = 1024;
+      const step = W / gridSize;
+      const gap = Math.max(6, 16 - gridSize * 2);
+
+      ctx.fillStyle = '#0b0f19';
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, W - 8, H - 8);
+
+      for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+          const id = `${f}-${r}-${c}`;
+          const tile = tiles[id];
+          if (!tile) continue;
+
+          const x = c * step + gap / 2;
+          const y = r * step + gap / 2;
+          const w = step - gap;
+          const h = step - gap;
+
+          if (tile.isBlank) {
+            ctx.fillStyle = '#090d16';
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, w, h);
+            continue;
+          }
+
+          const isSelected = pathSet.has(id);
+          const isHovered = (id === activeHoveredId);
+
+          if (isSelected) {
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(x, y, w, h);
+            ctx.fillStyle = '#0f172a';
+          } else if (isHovered) {
+            ctx.fillStyle = '#273549';
+            ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x - 2, y - 2, w + 4, h + 4);
+            ctx.fillStyle = '#fbbf24';
+          } else {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, w, h);
+            ctx.fillStyle = '#f8fafc';
+          }
+
+          const baseFontSize = Math.round(step * 0.44);
+          // Character grows in size on hover
+          const fontSize = isHovered ? Math.round(baseFontSize * 1.3) : baseFontSize;
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(tile.letter, x + w / 2, y + h / 2 + 1);
+        }
+      }
+    }
+
+    // Update Textures: mutates HTML DOM elements, uses drawElementImage (Primitive 3), or fallback
+    function updateTextures() {
+      const pathSet = new Set(selectedPath);
+
+      // 1. Mutate HTML DOM elements in the layoutsubtree
+      for (let f = 0; f < 6; f++) {
+        for (let r = 0; r < gridSize; r++) {
+          for (let c = 0; c < gridSize; c++) {
+            const id = `${f}-${r}-${c}`;
             const tile = tiles[id];
-            if (!tile) continue;
+            const el = domTiles[id];
+            if (!tile || !el) continue;
 
-            const x = c * step + gap / 2;
-            const y = r * step + gap / 2;
-            const w = step - gap;
-            const h = step - gap;
-
-            if (tile.isBlank) {
-              ctx.fillStyle = '#090d16';
-              ctx.fillRect(x, y, w, h);
-              ctx.strokeStyle = '#1e293b';
-              ctx.strokeRect(x, y, w, h);
-              continue;
+            const letterSpan = el.querySelector('.tile-letter');
+            if (letterSpan && letterSpan.textContent !== tile.letter) {
+              letterSpan.textContent = tile.letter;
             }
 
             const isSelected = pathSet.has(id);
-            if (isSelected) {
-              ctx.fillStyle = '#f59e0b';
-              ctx.fillRect(x, y, w, h);
-              ctx.strokeStyle = '#ffffff';
-              ctx.lineWidth = 4;
-              ctx.strokeRect(x, y, w, h);
-              ctx.fillStyle = '#0f172a';
-            } else {
-              ctx.fillStyle = '#1e293b';
-              ctx.fillRect(x, y, w, h);
-              ctx.strokeStyle = '#334155';
-              ctx.lineWidth = 2;
-              ctx.strokeRect(x, y, w, h);
-              ctx.fillStyle = '#f8fafc';
-            }
+            const isHovered = (id === hoveredTileId && !tile.isBlank);
+            const targetClass = 'dom-tile' +
+              (tile.isBlank ? ' blank' : '') +
+              (isSelected ? ' selected' : '') +
+              (isHovered ? ' hovered' : '');
 
-            const fontSize = Math.round(step * 0.44);
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(tile.letter, x + w / 2, y + h / 2 + 1);
+            if (el.className !== targetClass) {
+              el.className = targetClass;
+            }
+          }
+        }
+      }
+
+      // 2. Render to canvas: always paint the guaranteed crisp 2D fallback tiles first
+      for (let f = 0; f < 6; f++) {
+        const cvs = faceCanvases[f];
+        const ctx = cvs.getContext('2d');
+        const domFaceGrid = faceDomGrids[f];
+
+        // 1. Guaranteed render so all 6 faces are ALWAYS populated and visible
+        renderCanvasFallback(f, ctx, pathSet, hoveredTileId);
+
+        // 2. If HTML-in-Canvas drawElementImage is supported, draw the live styled DOM tree
+        if (typeof ctx.drawElementImage === 'function') {
+          try {
+            ctx.drawElementImage(domFaceGrid, 0, 0);
+          } catch (err) {
+            // Snapshot delay or layout settling: fallback already rendered!
           }
         }
         faceTextures[f].needsUpdate = true;
@@ -820,6 +1120,7 @@
       startX = e.clientX;
       startY = e.clientY;
       downPos = { x: e.clientX, y: e.clientY };
+      if (hoveredTileId) updateHoveredTile(null);
     });
 
     window.addEventListener('mousemove', e => {
@@ -830,7 +1131,21 @@
         targetRotX += dy * 0.008;
         startX = e.clientX;
         startY = e.clientY;
+        if (hoveredTileId) updateHoveredTile(null);
+      } else {
+        if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar')) {
+          if (hoveredTileId) updateHoveredTile(null);
+          return;
+        }
+        const hitTileId = getIntersectedTile(e);
+        if (hitTileId !== hoveredTileId) {
+          updateHoveredTile(hitTileId);
+        }
       }
+    });
+
+    window.addEventListener('mouseleave', () => {
+      if (hoveredTileId) updateHoveredTile(null);
     });
 
     window.addEventListener('mouseup', e => {
@@ -840,6 +1155,46 @@
       if (dist < 6) {
         const tileId = getIntersectedTile(e);
         if (tileId) handleTileClick(tileId);
+      }
+      const hitTileId = getIntersectedTile(e);
+      if (hitTileId !== hoveredTileId) {
+        updateHoveredTile(hitTileId);
+      }
+    });
+
+    // Touch support for mobile / touch screens
+    window.addEventListener('touchstart', e => {
+      if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar')) return;
+      if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+        downPos = { x: startX, y: startY };
+        if (hoveredTileId) updateHoveredTile(null);
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', e => {
+      if (isDragging && e.touches.length === 1) {
+        const dx = e.touches[0].clientX - startX;
+        const dy = e.touches[0].clientY - startY;
+        targetRotY += dx * 0.008;
+        targetRotX += dy * 0.008;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', e => {
+      if (!isDragging) return;
+      isDragging = false;
+      const lastTouch = e.changedTouches[0];
+      if (lastTouch) {
+        const dist = Math.hypot(lastTouch.clientX - downPos.x, lastTouch.clientY - downPos.y);
+        if (dist < 10) {
+          const tileId = getIntersectedTile(lastTouch);
+          if (tileId) handleTileClick(tileId);
+        }
       }
     });
 
@@ -989,8 +1344,10 @@
       words = b.words;
       selectedPath = [];
       activeHintWordId = null;
+      hoveredTileId = null;
       document.getElementById('btn-hint').textContent = 'Hint';
       document.getElementById('btn-hint').classList.remove('active-hint');
+      setupDomSubtree();
       updateHUD();
       updateActiveWordUI();
       updateTextures();
@@ -1015,6 +1372,14 @@
         startNewGame(Number(btn.dataset.size));
       };
     });
+
+    const btnView3d = document.getElementById('btn-view-3d');
+    if (btnView3d) {
+      btnView3d.onclick = () => {
+        targetRotX = 0.38;
+        targetRotY = -0.55;
+      };
+    }
 
     document.querySelectorAll('[data-face]').forEach(btn => {
       btn.onclick = () => snapFace(Number(btn.dataset.face));
