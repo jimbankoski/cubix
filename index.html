@@ -1115,6 +1115,8 @@
 
     let downPos = { x: 0, y: 0 };
     window.addEventListener('mousedown', e => {
+      // Right click is reserved solely for submitting words and never selects/drags tiles
+      if (e.button !== 0 || e.ctrlKey) return;
       if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar')) return;
       isDragging = true;
       startX = e.clientX;
@@ -1149,6 +1151,8 @@
     });
 
     window.addEventListener('mouseup', e => {
+      // Right-click or non-left buttons must never click tiles or alter letters
+      if (e.button !== 0 || e.ctrlKey) return;
       if (!isDragging) return;
       isDragging = false;
       const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
@@ -1200,6 +1204,8 @@
 
     window.addEventListener('contextmenu', e => {
       e.preventDefault();
+      // Right click strictly submits word and never adds or removes any letters
+      isDragging = false;
       handleSubmitWord();
     });
 
