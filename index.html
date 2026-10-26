@@ -30,7 +30,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Cubix Word Search 3D (Standalone Pure JavaScript)</title>
   <style>
     * {
@@ -39,6 +39,7 @@
       padding: 0;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
     body {
       background: radial-gradient(circle at center, #0f172a 0%, #020617 70%, #000000 100%);
@@ -47,11 +48,13 @@
       overflow: hidden;
       width: 100vw;
       height: 100vh;
+      touch-action: none;
     }
     #canvas-container {
       width: 100%;
       height: 100%;
       cursor: grab;
+      touch-action: none;
     }
     #canvas-container:active {
       cursor: grabbing;
@@ -252,6 +255,198 @@
       background: #f59e0b;
       color: #020617;
     }
+    /* Right Side Target Word List Panel */
+    .word-list-panel {
+      position: fixed;
+      top: 86px;
+      right: 18px;
+      width: 224px;
+      max-height: calc(100vh - 176px);
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(51, 65, 85, 0.75);
+      backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      z-index: 22;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.55);
+      user-select: none;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .word-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+      cursor: pointer;
+    }
+    .word-list-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .word-list-icon {
+      font-size: 14px;
+    }
+    .word-list-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: #f1f5f9;
+      text-transform: uppercase;
+    }
+    .word-list-badge {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      letter-spacing: 0.5px;
+    }
+    .word-list-toggle {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+    .word-list-toggle:hover {
+      background: #334155;
+      color: #fff;
+    }
+    .word-list-items {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      max-height: calc(100vh - 240px);
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: #334155 transparent;
+    }
+    .word-list-items::-webkit-scrollbar {
+      width: 4px;
+    }
+    .word-list-items::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .word-clue-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(30, 41, 59, 0.65);
+      border: 1px solid rgba(51, 65, 85, 0.55);
+      border-radius: 10px;
+      padding: 7px 10px;
+      cursor: pointer;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      max-height: 48px;
+      box-sizing: border-box;
+    }
+    .word-clue-item:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: #f59e0b;
+      transform: translateX(-3px);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+    }
+    .word-clue-item.found-removing {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: #10b981;
+      color: #34d399;
+      transform: translateX(40px) scale(0.92);
+      opacity: 0;
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+      border-width: 0;
+      pointer-events: none;
+    }
+    .clue-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .clue-first-letter {
+      width: 26px;
+      height: 26px;
+      background: linear-gradient(180deg, #fbbf24, #f59e0b);
+      color: #0f172a;
+      font-weight: 900;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(245, 158, 11, 0.35);
+      flex-shrink: 0;
+    }
+    .clue-placeholders {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: #94a3b8;
+      font-weight: 700;
+    }
+    .clue-len-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+      border-radius: 6px;
+      padding: 2px 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .all-words-cleared-banner {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px dashed rgba(16, 185, 129, 0.5);
+      color: #34d399;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+      padding: 10px;
+      border-radius: 10px;
+      letter-spacing: 0.5px;
+      animation: pulseClear 2s infinite ease-in-out;
+    }
+    @keyframes pulseClear {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.02); opacity: 1; }
+    }
+    .word-list-panel.collapsed .word-list-items {
+      display: none;
+    }
+    .word-list-panel.collapsed {
+      width: auto;
+      max-height: none;
+      padding: 8px 12px;
+    }
+    .word-list-panel.collapsed .word-list-header {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
     /* HTML-in-Canvas Subtree Styles (layoutsubtree / content="drawable") */
     #canvas-dom-layer {
       position: fixed;
@@ -360,12 +555,175 @@
       border: 1px solid rgba(245, 158, 11, 0.4);
       color: #fbbf24;
     }
+
+    /* Mobile Long-Press Indicator */
+    .long-press-indicator {
+      position: fixed;
+      width: 64px;
+      height: 64px;
+      margin-left: -32px;
+      margin-top: -32px;
+      border-radius: 50%;
+      border: 4px solid rgba(245, 158, 11, 0.4);
+      border-top-color: #f59e0b;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      transform: scale(0.6);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.1, 0.9, 0.2, 1), border-color 0.15s ease, opacity 0.15s ease;
+    }
+    .long-press-indicator.active {
+      display: block;
+      opacity: 1;
+      transform: scale(1.15);
+      animation: spinLongPress 0.8s linear infinite;
+    }
+    .long-press-indicator.complete {
+      border-color: #10b981;
+      border-top-color: #34d399;
+      box-shadow: 0 0 28px rgba(16, 185, 129, 0.9);
+      transform: scale(1.4);
+      animation: none;
+    }
+    @keyframes spinLongPress {
+      from { transform: rotate(0deg) scale(1.15); }
+      to { transform: rotate(360deg) scale(1.15); }
+    }
+
+    /* Mobile Responsive Layout */
+    @media (max-width: 680px) {
+      .top-bar {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        gap: 6px;
+      }
+      .hud-card {
+        padding: 5px 8px;
+        border-radius: 12px;
+        gap: 6px;
+      }
+      .logo-badge {
+        font-size: 11px;
+        padding: 2px 6px;
+      }
+      .title-group h1 {
+        font-size: 12px;
+        line-height: 1.1;
+      }
+      .title-group p {
+        display: none;
+      }
+      .api-badge {
+        font-size: 8px;
+        padding: 1px 4px;
+        margin-top: 1px;
+      }
+      .stats-item {
+        padding-right: 6px;
+      }
+      .stats-label {
+        font-size: 8px;
+      }
+      .stats-val {
+        font-size: 11px;
+      }
+      .active-word-bar {
+        bottom: 64px;
+        max-width: calc(100vw - 12px);
+      }
+      .toast-msg {
+        font-size: 10px;
+        padding: 4px 10px;
+        max-width: 95vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .word-chain {
+        padding: 5px 10px;
+        gap: 4px;
+        max-width: 95vw;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .letter-tile {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+        border-radius: 8px;
+      }
+      .btn-submit {
+        padding: 5px 10px;
+        font-size: 11px;
+        margin-left: 4px;
+      }
+      .btn-clear {
+        font-size: 14px;
+        padding: 2px;
+      }
+      .bottom-dock {
+        bottom: 6px;
+        padding: 6px 10px;
+        gap: 6px;
+        max-width: calc(100vw - 12px);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .btn-pill {
+        padding: 5px 8px;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .btn-hint {
+        padding: 5px 10px;
+        font-size: 10px;
+        white-space: nowrap;
+      }
+      .word-list-panel {
+        top: 68px;
+        right: 8px;
+        width: 178px;
+        max-height: calc(100vh - 190px);
+        padding: 8px 10px;
+        border-radius: 12px;
+      }
+      .word-list-title {
+        font-size: 10px;
+      }
+      .word-list-badge {
+        font-size: 8px;
+        padding: 1px 4px;
+      }
+      .word-clue-item {
+        padding: 5px 8px;
+        gap: 4px;
+      }
+      .clue-first-letter {
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+      }
+      .clue-placeholders {
+        font-size: 11px;
+        letter-spacing: 1.5px;
+      }
+      .clue-len-badge {
+        font-size: 8px;
+        padding: 1px 4px;
+      }
+    }
   </style>
   <!-- Pure browser JavaScript imports without Node -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+  <!-- Long-Press Visual Feedback Indicator -->
+  <div id="long-press-indicator" class="long-press-indicator"></div>
+
   <!-- HTML-in-Canvas Subtree Layer (layoutsubtree / content="drawable") -->
   <div id="canvas-dom-layer"></div>
 
@@ -395,12 +753,29 @@
     </div>
   </div>
 
+  <!-- Target Words Clue Panel (Right Side of Screen) -->
+  <div class="word-list-panel" id="word-list-panel">
+    <div class="word-list-header" id="word-list-header" title="Click to collapse / expand">
+      <div class="word-list-title-wrap">
+        <span class="word-list-icon">🎯</span>
+        <span class="word-list-title">TARGET WORDS</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span class="word-list-badge" id="word-list-count">0 REMAINING</span>
+        <button class="word-list-toggle" id="word-list-toggle" aria-label="Toggle word list">−</button>
+      </div>
+    </div>
+    <div class="word-list-items" id="word-list-items">
+      <!-- Word clues dynamically populated -->
+    </div>
+  </div>
+
   <!-- 3D Canvas -->
   <div id="canvas-container"></div>
 
   <!-- Active Word Bar -->
   <div class="active-word-bar">
-    <div class="toast-msg" id="toast-msg">Drag to rotate cube &bull; Click letter to begin &bull; Right-click to submit</div>
+    <div class="toast-msg" id="toast-msg">Drag to rotate &bull; Tap / click to select &bull; Long-press or right-click to submit</div>
     <div class="word-chain" id="word-chain" style="display: none;">
       <div id="tiles-container" style="display: flex; gap: 6px;"></div>
       <button class="btn-clear" id="btn-clear" title="Clear selection">&times;</button>
@@ -786,12 +1161,38 @@
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 0, 4.4);
-
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
+
+    // Responsive Camera Fit: ensures the entire 3D cube fits in the window on all screen sizes/ratios
+    function updateCameraFit() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const aspect = w / h;
+      camera.aspect = aspect;
+
+      const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)); // ~0.38386
+      const hudFraction = h < 550 ? 0.30 : (w < 600 ? 0.26 : 0.16);
+      const usableHeightRatio = Math.max(0.45, 1 - hudFraction);
+
+      let targetZ = 4.4;
+      if (aspect < 1.15) {
+        // Portrait or square screens (mobile phones, portrait tablets)
+        const reqZWidth = 1.88 / (tanHalfFov * aspect);
+        const reqZHeight = 1.65 / (tanHalfFov * usableHeightRatio);
+        targetZ = Math.max(4.4, Math.max(reqZWidth, reqZHeight));
+      } else if (h < 550) {
+        // Landscape mobile screens (short vertical height)
+        const reqZHeight = 1.55 / (tanHalfFov * usableHeightRatio);
+        targetZ = Math.max(4.4, reqZHeight);
+      }
+      camera.position.set(0, 0, targetZ);
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    }
+    updateCameraFit();
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
@@ -1114,10 +1515,38 @@
     }
 
     let downPos = { x: 0, y: 0 };
+    let lastTouchEndTime = 0;
+    let longPressTimer = null;
+    let longPressTriggered = false;
+    let touchStartPos = { x: 0, y: 0 };
+
+    const longPressIndicator = document.getElementById('long-press-indicator');
+
+    function showLongPressIndicator(x, y) {
+      if (!longPressIndicator) return;
+      longPressIndicator.style.left = `${x}px`;
+      longPressIndicator.style.top = `${y}px`;
+      longPressIndicator.classList.remove('complete');
+      longPressIndicator.classList.add('active');
+    }
+
+    function hideLongPressIndicator() {
+      if (!longPressIndicator) return;
+      longPressIndicator.classList.remove('active', 'complete');
+    }
+
+    function completeLongPressIndicator() {
+      if (!longPressIndicator) return;
+      longPressIndicator.classList.add('complete');
+      setTimeout(() => hideLongPressIndicator(), 350);
+    }
+
     window.addEventListener('mousedown', e => {
+      // Ignore simulated mouse events fired after touch
+      if (Date.now() - lastTouchEndTime < 650) return;
       // Right click is reserved solely for submitting words and never selects/drags tiles
       if (e.button !== 0 || e.ctrlKey) return;
-      if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar')) return;
+      if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar, .word-list-panel')) return;
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -1135,7 +1564,7 @@
         startY = e.clientY;
         if (hoveredTileId) updateHoveredTile(null);
       } else {
-        if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar')) {
+        if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar, .word-list-panel')) {
           if (hoveredTileId) updateHoveredTile(null);
           return;
         }
@@ -1151,6 +1580,8 @@
     });
 
     window.addEventListener('mouseup', e => {
+      // Ignore simulated mouse events fired after touch
+      if (Date.now() - lastTouchEndTime < 650) return;
       // Right-click or non-left buttons must never click tiles or alter letters
       if (e.button !== 0 || e.ctrlKey) return;
       if (!isDragging) return;
@@ -1166,40 +1597,100 @@
       }
     });
 
-    // Touch support for mobile / touch screens
+    // Touch support for mobile / touch screens: Tap for letter selection, Long-press to submit, Drag to rotate
     window.addEventListener('touchstart', e => {
-      if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar')) return;
+      if (e.target.closest('.hud-card, .bottom-dock, .active-word-bar, .word-list-panel')) return;
       if (e.touches.length === 1) {
+        const touch = e.touches[0];
         isDragging = true;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
+        startX = touch.clientX;
+        startY = touch.clientY;
         downPos = { x: startX, y: startY };
+        touchStartPos = { x: startX, y: startY };
+        longPressTriggered = false;
+
         if (hoveredTileId) updateHoveredTile(null);
+
+        // Start long-press timer to submit active word (420ms)
+        clearTimeout(longPressTimer);
+        showLongPressIndicator(touch.clientX, touch.clientY);
+        longPressTimer = setTimeout(() => {
+          longPressTriggered = true;
+          isDragging = false; // Stop rotating immediately on long-press
+          completeLongPressIndicator();
+
+          // Haptic feedback if supported on mobile
+          if (navigator.vibrate) {
+            try { navigator.vibrate([40, 30, 60]); } catch (err) {}
+          }
+          showToast('Long-press: Submitting word!');
+          handleSubmitWord();
+        }, 420);
       }
-    }, { passive: true });
+    }, { passive: false });
 
     window.addEventListener('touchmove', e => {
-      if (isDragging && e.touches.length === 1) {
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
-        targetRotY += dx * 0.008;
-        targetRotX += dy * 0.008;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
+      if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const distFromStart = Math.hypot(touch.clientX - touchStartPos.x, touch.clientY - touchStartPos.y);
+
+        // If finger moves more than 8px, cancel long-press and treat as rotation drag
+        if (distFromStart > 8) {
+          if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+            hideLongPressIndicator();
+          }
+        }
+
+        if (isDragging && !longPressTriggered) {
+          const dx = touch.clientX - startX;
+          const dy = touch.clientY - startY;
+          targetRotY += dx * 0.008;
+          targetRotX += dy * 0.008;
+          startX = touch.clientX;
+          startY = touch.clientY;
+        }
       }
     }, { passive: true });
 
     window.addEventListener('touchend', e => {
-      if (!isDragging) return;
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      hideLongPressIndicator();
+
+      if (!isDragging && !longPressTriggered) return;
       isDragging = false;
+
+      // If long press triggered, do not treat finger release as a tile click
+      if (longPressTriggered) {
+        longPressTriggered = false;
+        lastTouchEndTime = Date.now();
+        return;
+      }
+
+      // Tap detection: finger didn't drag significantly, treat as primary finger click on tile
       const lastTouch = e.changedTouches[0];
       if (lastTouch) {
         const dist = Math.hypot(lastTouch.clientX - downPos.x, lastTouch.clientY - downPos.y);
-        if (dist < 10) {
+        if (dist < 16) {
           const tileId = getIntersectedTile(lastTouch);
           if (tileId) handleTileClick(tileId);
         }
       }
+      lastTouchEndTime = Date.now();
+    });
+
+    window.addEventListener('touchcancel', () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      hideLongPressIndicator();
+      isDragging = false;
+      longPressTriggered = false;
     });
 
     window.addEventListener('contextmenu', e => {
@@ -1236,6 +1727,78 @@
       const cleared = Object.values(tiles).filter(t => t.isBlank).length;
       const total = 6 * gridSize * gridSize;
       document.getElementById('hud-cleared').textContent = `${Math.round((cleared / total) * 100)}%`;
+    }
+
+    // Target Word List Management (Right-side clue panel: first letter + letter count, auto-removed on solve)
+    function renderWordListUI() {
+      const listEl = document.getElementById('word-list-items');
+      const countEl = document.getElementById('word-list-count');
+      if (!listEl || !countEl) return;
+
+      const remainingWords = words.filter(w => !w.found);
+      countEl.textContent = remainingWords.length > 0 ? `${remainingWords.length} REMAINING` : 'ALL SOLVED!';
+
+      if (remainingWords.length === 0) {
+        listEl.innerHTML = `
+          <div class="all-words-cleared-banner">
+            🎉 All Target Words Found!<br><span style="font-size: 9px; opacity: 0.85; font-weight: 600;">Cube Fully Cleared</span>
+          </div>`;
+        return;
+      }
+
+      listEl.innerHTML = '';
+      remainingWords.forEach(w => {
+        const item = document.createElement('div');
+        item.className = 'word-clue-item';
+        item.id = `clue-${w.id}`;
+        item.dataset.wordId = w.id;
+        item.title = `Starts with '${w.word[0]}', ${w.word.length} letters total`;
+
+        const firstLetter = w.word[0];
+        // Render stylized dots/placeholders for the remaining letters of the word
+        const placeholderDots = '• '.repeat(w.word.length - 1).trim();
+
+        item.innerHTML = `
+          <div class="clue-left">
+            <span class="clue-first-letter">${firstLetter}</span>
+            <span class="clue-placeholders">${placeholderDots}</span>
+          </div>
+          <span class="clue-len-badge">${w.word.length} letters</span>
+        `;
+
+        item.onclick = (e) => {
+          e.stopPropagation();
+          showToast(`Clue: Target word begins with '${firstLetter}' (${w.word.length} letters total)`);
+          // Snap camera toward the face where this word starts
+          if (w.path && w.path[0] && tiles[w.path[0]]) {
+            snapFace(tiles[w.path[0]].face);
+          }
+        };
+
+        listEl.appendChild(item);
+      });
+    }
+
+    function removeWordFromList(wordId) {
+      const item = document.getElementById(`clue-${wordId}`);
+      const countEl = document.getElementById('word-list-count');
+      const remaining = words.filter(w => !w.found).length;
+
+      if (countEl) {
+        countEl.textContent = remaining > 0 ? `${remaining} REMAINING` : 'ALL SOLVED!';
+      }
+
+      if (item) {
+        item.classList.add('found-removing');
+        setTimeout(() => {
+          item.remove();
+          if (remaining === 0) {
+            renderWordListUI();
+          }
+        }, 300);
+      } else {
+        renderWordListUI();
+      }
     }
 
     function handleTileClick(tileId) {
@@ -1285,6 +1848,7 @@
         updateHUD();
         updateActiveWordUI();
         updateTextures();
+        removeWordFromList(match.id);
 
         if (words.every(w => w.found)) {
           confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -1357,6 +1921,7 @@
       updateHUD();
       updateActiveWordUI();
       updateTextures();
+      renderWordListUI();
       showToast(`Started new ${size}x${size} word search game!`);
     }
 
@@ -1370,6 +1935,25 @@
     };
     document.getElementById('btn-hint').onclick = handleHint;
     document.getElementById('btn-new-game').onclick = () => startNewGame(gridSize);
+
+    // Target Word List Collapsible Toggle
+    const wordListPanel = document.getElementById('word-list-panel');
+    const wordListToggle = document.getElementById('word-list-toggle');
+    const wordListHeader = document.getElementById('word-list-header');
+    if (wordListToggle && wordListPanel) {
+      wordListToggle.onclick = (e) => {
+        e.stopPropagation();
+        const isCollapsed = wordListPanel.classList.toggle('collapsed');
+        wordListToggle.textContent = isCollapsed ? '+' : '−';
+      };
+    }
+    if (wordListHeader && wordListPanel && wordListToggle) {
+      wordListHeader.onclick = (e) => {
+        if (e.target === wordListToggle) return;
+        const isCollapsed = wordListPanel.classList.toggle('collapsed');
+        wordListToggle.textContent = isCollapsed ? '+' : '−';
+      };
+    }
 
     document.querySelectorAll('[data-size]').forEach(btn => {
       btn.onclick = () => {
@@ -1408,10 +1992,9 @@
       document.getElementById('hud-timer').textContent = `${m}:${s}`;
     }, 1000);
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+    window.addEventListener('resize', updateCameraFit);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateCameraFit, 100);
     });
 
     function animate() {
